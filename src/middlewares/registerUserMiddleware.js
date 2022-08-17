@@ -1,5 +1,5 @@
 import connection from '../databases/postgres.js';
-import userSchema from '../schemas/userLoginSchema.js';
+import userSchema from '../schemas/userRegisterSchema.js';
 
 async function validateNewUser(request, response, next) {
   const newUser = request.body;

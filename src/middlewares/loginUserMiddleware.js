@@ -1,5 +1,6 @@
 import connection from '../databases/postgres.js';
 import userLoginSchema from '../schemas/userLoginSchema.js';
+import bcrypt from 'bcrypt';
 
 async function validateLoginUser(request, response, next) {
   const LoginUser = request.body;
@@ -13,32 +14,21 @@ async function validateLoginUser(request, response, next) {
   }
 
   try {
-    const { rows: idUser } = await connection.query(
-      `SELECT users.id FROM users WHERE email = $1;`,
+    const { rows: user } = await connection.query(
+      `SELECT users.id, users."password" FROM users WHERE email = $1;`,
       [LoginUser.email]
     );
-    if (idUser.length <= 0) return response.status(404).send('Email não registrado');
 
-    //================
+    const passwordDecrypted = bcrypt.compare(LoginUser.password, user[0].password);
 
-    const { rows: session } = await connection.query(
-      `SELECT * FROM sessions WHERE id = $1`,
-      [idUser[0].id]
-    );
-    if (session.length > 0) return response.status(409).send('Usuário online');
+    if (user.length <= 0 || !passwordDecrypted)
+      return response.status(400).send('Email ou Senha incorreto(s)!');
 
-    //==========
-
-    const status = Date.now();
-    console.log(idUser, status);
-    await connection.query(
-      `INSERT INTO sessions (id, "lastStatus") VALUES (${idUser[0].id}, ${status}));`
-    );
-    //===============
+    response.locals.user = user;
 
     next();
   } catch {
-    response.status(500).send('erro ao inserir userasdas');
+    response.status(500).send('erro ao logar user');
   }
 }
 

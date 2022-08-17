@@ -1,22 +1,50 @@
 import connection from '../databases/postgres.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 export async function registerUser(request, response) {
-  const newUser = request.body;
+  const { email, name, image, password } = request.body;
+  const passwordCrypted = bcrypt.hashSync(password, 10);
   try {
     await connection.query(
       `INSERT INTO users (email, name, image, password) VALUES
-      ('${newUser.email}',
-      '${newUser.name}',
-      '${newUser.image}',
-      '${newUser.password}');`
+      ('${email}',
+      '${name}',
+      '${image}',
+      '${passwordCrypted}');`
     );
 
     return response.sendStatus(201);
   } catch {
-    return response.status(500).send('erro ao inserir userwda');
+    return response.status(500).send('erro ao inserir user');
   }
 }
 
+export async function loginUser(request, response) {
+  const { user } = response.locals;
+
+  const secretKey = process.env.JWT_SECRET;
+  const data = { userId: user[0].id };
+
+  const settings = { expiresIn: 60 * 60 * 24 * 30 };
+
+  const token = jwt.sign(data, secretKey, settings);
+
+  return response.status(200).send({ Authorization: `Baerer ${token}` });
+}
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+//
+//
 export async function getUsers(request, response) {
   const { cpf } = request.query;
   const { id } = request.params;
